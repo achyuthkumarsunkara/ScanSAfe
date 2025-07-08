@@ -1,7 +1,7 @@
 import React from 'react';
 import { Mail, Phone, MapPin } from 'lucide-react';
-import logo from '../public/logo.png';
-import icon from '../public/icon.svg';
+import logo from '/logo.png';
+import icon from '/icon.svg';
 
 const Footer: React.FC = () => {
   return (

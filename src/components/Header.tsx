@@ -1,6 +1,6 @@
 import React from 'react';
 import { Menu, X } from 'lucide-react';
-import logo from '../public/logo.png';
+import logo from '/logo.png';
 
 interface HeaderProps {
   activeSection: string;
