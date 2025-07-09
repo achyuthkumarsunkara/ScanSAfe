@@ -24,7 +24,9 @@ const Footer: React.FC = () => {
           <div>
             <h3 className="text-lg font-semibold text-white mb-6">About Phishing</h3>
             <p className="text-gray-400 text-lg">
-              <b>Phishing attacks</b> are deceptive attempts by cybercriminals to steal personal or financial information by tricking you through fake emails, messages, or websites. These attacks often look real but contain malicious links designed to capture your data. With <b>ScanSAfe</b>, you can quickly scan suspicious emails and links to detect potential threats and stay safe online — before it’s too late.
+              <b>Phishing attacks</b> are deceptive attempts by cybercriminals to steal personal or financial information by tricking you through fake emails, messages, or websites. 
+              These attacks often look real but contain malicious links designed to capture your data. 
+              With <b>ScanSAfe</b>, you can quickly scan suspicious emails and links to detect potential threats and stay safe online — before it’s too late.
             </p>
           </div>
         </div>
@@ -37,7 +39,7 @@ const Footer: React.FC = () => {
             <img 
               src={icon}
               alt="ScanSAfe Icon"
-              className="h-8 w-auto"
+              className="h-14 w-auto"
             />
           </div>
         </div>
