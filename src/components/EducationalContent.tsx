@@ -1,5 +1,6 @@
 import React from 'react';
 import { BookOpen, Users, Target, Shield, AlertTriangle, Eye } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const EducationalContent: React.FC = () => {
   const phishingTypes = [
@@ -76,89 +77,170 @@ const EducationalContent: React.FC = () => {
     }
   ];
 
-  return (
-    <section className="py-20 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <BookOpen className="h-16 w-16 text-blue-600 mx-auto mb-4" />
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Learn About Phishing</h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Educate yourself about different types of phishing attacks and how to protect yourself from cyber threats
-          </p>
-        </div>
+  // Animation variants
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
 
-        <div className="grid lg:grid-cols-2 gap-12 mb-16">
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">Types of Phishing Attacks</h3>
-            <div className="space-y-6">
+  const staggerContainer = {
+    visible: {
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  return (
+    <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800 py-20">
+      {/* Decorative elements */}
+      <div className="absolute top-0 left-0 w-full h-full opacity-20">
+        <div className="absolute top-20 left-10 w-32 h-32 rounded-full bg-blue-500 blur-3xl"></div>
+        <div className="absolute bottom-10 right-10 w-40 h-40 rounded-full bg-indigo-500 blur-3xl"></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <motion.div 
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+          className="text-center mb-16"
+        >
+          <motion.div variants={fadeInUp}>
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500/20 rounded-full mb-4 mx-auto">
+              <BookOpen className="h-8 w-8 text-blue-400" />
+            </div>
+          </motion.div>
+          <motion.div variants={fadeInUp}>
+            <h2 className="text-3xl font-bold text-white mb-4">Learn About Phishing</h2>
+          </motion.div>
+          <motion.div variants={fadeInUp}>
+            <p className="text-lg text-gray-300 max-w-3xl mx-auto">
+              Educate yourself about different types of phishing attacks and how to protect yourself from cyber threats
+            </p>
+          </motion.div>
+        </motion.div>
+
+        <motion.div 
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+          className="grid lg:grid-cols-2 gap-8 mb-16"
+        >
+          <motion.div variants={fadeInUp}>
+            <h3 className="text-2xl font-bold text-white mb-6">Types of Phishing Attacks</h3>
+            <div className="space-y-4">
               {phishingTypes.map((type, index) => (
-                <div key={index} className="card">
+                <motion.div 
+                  key={index}
+                  variants={fadeInUp}
+                  whileHover={{ y: -5 }}
+                  className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-gray-700/50 hover:border-gray-600 transition-all"
+                >
                   <div className="flex items-start gap-4">
-                    <div className="bg-blue-100 p-3 rounded-lg">
-                      <type.icon className="h-6 w-6 text-blue-600" />
+                    <div className="bg-blue-500/20 p-3 rounded-lg">
+                      <type.icon className="h-6 w-6 text-blue-400" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-2">{type.title}</h4>
-                      <p className="text-gray-600 mb-3">{type.description}</p>
-                      <ul className="text-sm text-gray-500 space-y-1">
+                      <h4 className="font-semibold text-white mb-2">{type.title}</h4>
+                      <p className="text-gray-400 mb-3">{type.description}</p>
+                      <ul className="text-sm text-gray-400 space-y-1">
                         {type.examples.map((example, i) => (
-                          <li key={i} className="flex items-center gap-2">
+                          <motion.li 
+                            key={i} 
+                            className="flex items-center gap-2"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: i * 0.1 }}
+                          >
                             <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
                             {example}
-                          </li>
+                          </motion.li>
                         ))}
                       </ul>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">Warning Signs</h3>
+          <motion.div variants={fadeInUp}>
+            <h3 className="text-2xl font-bold text-white mb-6">Warning Signs</h3>
             
-            <div className="card mb-6">
-              <h4 className="font-semibold text-gray-900 mb-4">Email Warning Signs</h4>
-              <ul className="space-y-2">
+            <motion.div 
+              whileHover={{ y: -5 }}
+              className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-gray-700/50 hover:border-gray-600 transition-all mb-6"
+            >
+              <h4 className="font-semibold text-white mb-4">Email Warning Signs</h4>
+              <ul className="space-y-3">
                 {warningSignsEmail.map((sign, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">{sign}</span>
-                  </li>
+                  <motion.li 
+                    key={index}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="flex items-start gap-2"
+                  >
+                    <AlertTriangle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-gray-300">{sign}</span>
+                  </motion.li>
                 ))}
               </ul>
-            </div>
+            </motion.div>
 
-            <div className="card">
-              <h4 className="font-semibold text-gray-900 mb-4">Link Warning Signs</h4>
-              <ul className="space-y-2">
+            <motion.div 
+              whileHover={{ y: -5 }}
+              className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-gray-700/50 hover:border-gray-600 transition-all"
+            >
+              <h4 className="font-semibold text-white mb-4">Link Warning Signs</h4>
+              <ul className="space-y-3">
                 {warningSignsLinks.map((sign, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">{sign}</span>
-                  </li>
+                  <motion.li 
+                    key={index}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="flex items-start gap-2"
+                  >
+                    <AlertTriangle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-gray-300">{sign}</span>
+                  </motion.li>
                 ))}
               </ul>
-            </div>
-          </div>
-        </div>
+            </motion.div>
+          </motion.div>
+        </motion.div>
 
-        <div className="card">
-          <div className="flex items-center gap-3 mb-6">
-            <Shield className="h-8 w-8 text-green-600" />
-            <h3 className="text-2xl font-bold text-gray-900">Best Practices for Protection</h3>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-gray-800/50 backdrop-blur-sm p-8 rounded-xl border border-gray-700/50"
+        >
+          <div className="flex items-center gap-3 mb-8">
+            <div className="bg-green-500/20 p-2 rounded-lg">
+              <Shield className="h-6 w-6 text-green-400" />
+            </div>
+            <h3 className="text-2xl font-bold text-white">Best Practices for Protection</h3>
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {bestPractices.map((practice, index) => (
-              <div key={index} className="bg-gray-50 p-6 rounded-lg">
-                <h4 className="font-semibold text-gray-900 mb-2">{practice.title}</h4>
-                <p className="text-sm text-gray-600">{practice.description}</p>
-              </div>
+              <motion.div 
+                key={index}
+                whileHover={{ y: -5 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-gray-700/30 p-6 rounded-lg border border-gray-600/30 hover:border-gray-500 transition-all"
+              >
+                <h4 className="font-semibold text-white mb-2">{practice.title}</h4>
+                <p className="text-sm text-gray-400">{practice.description}</p>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
