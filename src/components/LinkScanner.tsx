@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Link, Scan, AlertTriangle, CheckCircle, XCircle, Globe, ChevronDown, ChevronUp, Shield, Lock, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -24,6 +24,27 @@ interface LinkScanResult {
   };
 }
 
+const RISK_LEVELS = {
+  safe: { color: 'green', icon: CheckCircle },
+  suspicious: { color: 'amber', icon: AlertTriangle },
+  dangerous: { color: 'red', icon: XCircle },
+  default: { color: 'gray', icon: Globe }
+};
+
+const SEVERITY_WEIGHTS = {
+  high: 30,
+  medium: 20,
+  low: 10
+};
+
+const SUSPICIOUS_TLDS = ['.tk', '.ml', '.ga', '.cf', '.gq', '.xyz'];
+const SUSPICIOUS_KEYWORDS = [
+  { pattern: /login|signin|auth/i, severity: 'medium' as const },
+  { pattern: /bank|paypal|amazon|ebay/i, severity: 'high' as const },
+  { pattern: /update|verify|security/i, severity: 'medium' as const },
+  { pattern: /account|profile|settings/i, severity: 'low' as const }
+];
+
 const LinkScanner: React.FC = () => {
   const [url, setUrl] = useState('');
   const [isScanning, setIsScanning] = useState(false);
@@ -31,7 +52,6 @@ const LinkScanner: React.FC = () => {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [scanHistory, setScanHistory] = useState<LinkScanResult[]>([]);
 
-  // Animation variants
   const fadeInUp = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 }
@@ -45,7 +65,7 @@ const LinkScanner: React.FC = () => {
     }
   };
 
-  const analyzeDomain = (domain: string) => {
+  const analyzeDomain = useCallback((domain: string) => {
     const results = {
       isSuspicious: false,
       indicators: [] as {
@@ -57,31 +77,33 @@ const LinkScanner: React.FC = () => {
       creationDate: null as string | null
     };
 
-    const suspiciousTLDs = ['.tk', '.ml', '.ga', '.cf', '.gq', '.xyz'];
-    if (suspiciousTLDs.some(tld => domain.endsWith(tld))) {
+    const domainTLD = '.' + domain.split('.').pop();
+    if (SUSPICIOUS_TLDS.includes(domainTLD)) {
       results.indicators.push({
         type: 'domain',
-        message: `Suspicious top-level domain (${domain.split('.').pop()})`,
+        message: `Suspicious top-level domain (${domainTLD})`,
         severity: 'high'
       });
       results.isSuspicious = true;
     }
 
     if (Math.random() > 0.7) {
-      results.creationDate = new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      if (results.creationDate && new Date(results.creationDate).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000) {
+      const daysOld = Math.floor(Math.random() * 90) + 1;
+      results.creationDate = new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      
+      if (daysOld < 30) {
         results.indicators.push({
           type: 'domain',
-          message: 'Newly registered domain (less than 30 days old)',
+          message: `Newly registered domain (${daysOld} day${daysOld === 1 ? '' : 's'} old)`,
           severity: 'medium'
         });
       }
     }
 
     return results;
-  };
+  }, []);
 
-  const analyzeUrlStructure = (url: string) => {
+  const analyzeUrlStructure = useCallback((url: string) => {
     const indicators: {type: 'url', message: string, severity: 'low' | 'medium' | 'high'}[] = [];
     
     if (url.includes('@')) {
@@ -111,19 +133,12 @@ const LinkScanner: React.FC = () => {
     }
 
     return indicators;
-  };
+  }, []);
 
-  const analyzeContentPatterns = (url: string) => {
+  const analyzeContentPatterns = useCallback((url: string) => {
     const indicators: {type: 'content', message: string, severity: 'low' | 'medium' | 'high'}[] = [];
     
-    const suspiciousKeywords = [
-      { pattern: /login|signin|auth/i, severity: 'medium' as const },
-      { pattern: /bank|paypal|amazon|ebay/i, severity: 'high' as const },
-      { pattern: /update|verify|security/i, severity: 'medium' as const },
-      { pattern: /account|profile|settings/i, severity: 'low' as const }
-    ];
-
-    suspiciousKeywords.forEach(({ pattern, severity }) => {
+    SUSPICIOUS_KEYWORDS.forEach(({ pattern, severity }) => {
       if (pattern.test(url)) {
         indicators.push({
           type: 'content',
@@ -134,11 +149,9 @@ const LinkScanner: React.FC = () => {
     });
 
     return indicators;
-  };
+  }, []);
 
-  const generateRecommendations = (
-    riskLevel: 'safe' | 'suspicious' | 'dangerous'
-  ): string[] => {
+  const generateRecommendations = useCallback((riskLevel: 'safe' | 'suspicious' | 'dangerous'): string[] => {
     const baseRecommendations = [
       'Always verify links before clicking',
       'Use a password manager to avoid phishing sites'
@@ -166,16 +179,19 @@ const LinkScanner: React.FC = () => {
       'Link appears safe but remain vigilant',
       ...baseRecommendations
     ];
-  };
+  }, []);
 
-  const analyzeLink = async (inputUrl: string): Promise<LinkScanResult> => {
+  const analyzeLink = useCallback(async (inputUrl: string): Promise<LinkScanResult> => {
     try {
-      const urlObj = new URL(inputUrl.startsWith('http') ? inputUrl : `https://${inputUrl}`);
+      const normalizedUrl = inputUrl.startsWith('http') ? inputUrl : `https://${inputUrl}`;
+      const urlObj = new URL(normalizedUrl);
       const domain = urlObj.hostname.replace('www.', '');
 
-      const domainAnalysis = analyzeDomain(domain);
-      const urlAnalysis = analyzeUrlStructure(inputUrl);
-      const contentAnalysis = analyzeContentPatterns(inputUrl);
+      const [domainAnalysis, urlAnalysis, contentAnalysis] = await Promise.all([
+        analyzeDomain(domain),
+        analyzeUrlStructure(inputUrl),
+        analyzeContentPatterns(inputUrl)
+      ]);
 
       const allIndicators = [
         ...domainAnalysis.indicators,
@@ -184,8 +200,7 @@ const LinkScanner: React.FC = () => {
       ];
 
       let score = allIndicators.reduce((total, indicator) => {
-        return total + (indicator.severity === 'high' ? 30 : 
-                       indicator.severity === 'medium' ? 20 : 10);
+        return total + SEVERITY_WEIGHTS[indicator.severity];
       }, 0);
 
       const isHttps = urlObj.protocol === 'https:';
@@ -195,7 +210,7 @@ const LinkScanner: React.FC = () => {
           message: 'Connection is not secure (HTTP instead of HTTPS)',
           severity: 'high'
         });
-        score += 30;
+        score += SEVERITY_WEIGHTS.high;
       }
 
       let riskLevel: 'safe' | 'suspicious' | 'dangerous';
@@ -249,9 +264,9 @@ const LinkScanner: React.FC = () => {
         }
       };
     }
-  };
+  }, [analyzeDomain, analyzeUrlStructure, analyzeContentPatterns, generateRecommendations]);
 
-  const handleScan = async () => {
+  const handleScan = useCallback(async () => {
     if (!url.trim()) return;
     
     setIsScanning(true);
@@ -266,43 +281,32 @@ const LinkScanner: React.FC = () => {
     } finally {
       setIsScanning(false);
     }
-  };
+  }, [url, analyzeLink]);
 
-  const getRiskColor = (level: string) => {
-    switch (level) {
-      case 'safe': return 'text-green-400';
-      case 'suspicious': return 'text-amber-400';
-      case 'dangerous': return 'text-red-400';
-      default: return 'text-gray-400';
+  const getRiskStyle = useMemo(() => {
+    return (level: keyof typeof RISK_LEVELS) => {
+      const risk = RISK_LEVELS[level] || RISK_LEVELS.default;
+      return {
+        colorClass: `text-${risk.color}-400`,
+        bgClass: `bg-${risk.color}-900/20 border-${risk.color}-400/20`,
+        icon: risk.icon
+      };
+    };
+  }, []);
+
+  const toggleSection = useCallback((section: string) => {
+    setExpandedSection(prev => prev === section ? null : section);
+  }, []);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleScan();
     }
-  };
-
-  const getRiskBg = (level: string) => {
-    switch (level) {
-      case 'safe': return 'bg-green-900/20 border-green-400/20';
-      case 'suspicious': return 'bg-amber-900/20 border-amber-400/20';
-      case 'dangerous': return 'bg-red-900/20 border-red-400/20';
-      default: return 'bg-gray-900/20 border-gray-400/20';
-    }
-  };
-
-  const getRiskIcon = (level: string) => {
-    switch (level) {
-      case 'safe': return CheckCircle;
-      case 'suspicious': return AlertTriangle;
-      case 'dangerous': return XCircle;
-      default: return Globe;
-    }
-  };
-
-  const toggleSection = (section: string) => {
-    setExpandedSection(expandedSection === section ? null : section);
-  };
+  }, [handleScan]);
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800 py-20">
-      {/* Decorative elements */}
-      <div className="absolute top-0 left-0 w-full h-full opacity-20">
+      <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none">
         <div className="absolute top-20 left-10 w-32 h-32 rounded-full bg-blue-500 blur-3xl"></div>
         <div className="absolute bottom-10 right-10 w-40 h-40 rounded-full bg-indigo-500 blur-3xl"></div>
       </div>
@@ -341,9 +345,9 @@ const LinkScanner: React.FC = () => {
                 type="url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={handleKeyDown}
                 className="w-full px-4 py-3 bg-gray-700/50 text-gray-200 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
                 placeholder="https://example.com"
-                onKeyDown={(e) => e.key === 'Enter' && handleScan()}
               />
             </div>
             <motion.button
@@ -396,19 +400,19 @@ const LinkScanner: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="space-y-6"
           >
-            <div className={`rounded-xl shadow-lg p-6 border-2 ${getRiskBg(scanResult.riskLevel)} backdrop-blur-sm`}>
+            <div className={`rounded-xl shadow-lg p-6 border-2 ${getRiskStyle(scanResult.riskLevel).bgClass} backdrop-blur-sm`}>
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-full ${getRiskBg(scanResult.riskLevel)}`}>
-                    {React.createElement(getRiskIcon(scanResult.riskLevel), {
-                      className: `h-8 w-8 ${getRiskColor(scanResult.riskLevel)}`
+                  <div className={`p-3 rounded-full ${getRiskStyle(scanResult.riskLevel).bgClass}`}>
+                    {React.createElement(getRiskStyle(scanResult.riskLevel).icon, {
+                      className: `h-8 w-8 ${getRiskStyle(scanResult.riskLevel).colorClass}`
                     })}
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-white">Scan Results</h2>
                     <div className="flex items-center gap-2">
                       <span className="text-gray-400">Risk Level:</span>
-                      <span className={`font-semibold ${getRiskColor(scanResult.riskLevel)}`}>
+                      <span className={`font-semibold ${getRiskStyle(scanResult.riskLevel).colorClass}`}>
                         {scanResult.riskLevel.charAt(0).toUpperCase() + scanResult.riskLevel.slice(1)}
                       </span>
                       <span className="text-gray-500">•</span>
@@ -445,38 +449,35 @@ const LinkScanner: React.FC = () => {
                       <ChevronDown className="h-5 w-5 text-gray-400" />
                     )}
                   </h3>
-                  {(expandedSection === 'indicators' || expandedSection === null) && (
+                  {expandedSection === 'indicators' && (
                     <ul className="space-y-3">
-                      {scanResult.indicators.map((indicator, index) => (
-                        <motion.li 
-                          key={index} 
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="flex items-start gap-3"
-                        >
-                          <div className={`mt-0.5 flex-shrink-0 ${
-                            indicator.severity === 'high' ? 'text-red-400' :
-                            indicator.severity === 'medium' ? 'text-amber-400' : 'text-blue-400'
-                          }`}>
-                            {indicator.severity === 'high' ? (
-                              <XCircle className="h-4 w-4" />
-                            ) : indicator.severity === 'medium' ? (
-                              <AlertTriangle className="h-4 w-4" />
-                            ) : (
-                              <Shield className="h-4 w-4" />
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-200">{indicator.message}</p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              {indicator.type === 'domain' ? 'Domain Analysis' :
-                               indicator.type === 'url' ? 'URL Structure' :
-                               indicator.type === 'security' ? 'Security Issue' : 'Content Pattern'}
-                            </p>
-                          </div>
-                        </motion.li>
-                      ))}
+                      {scanResult.indicators.map((indicator, index) => {
+                        const severityIcon = indicator.severity === 'high' ? XCircle : 
+                                          indicator.severity === 'medium' ? AlertTriangle : Shield;
+                        const severityColor = indicator.severity === 'high' ? 'red' : 
+                                           indicator.severity === 'medium' ? 'amber' : 'blue';
+                        return (
+                          <motion.li 
+                            key={index} 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: index * 0.05 }}
+                            className="flex items-start gap-3"
+                          >
+                            <div className={`mt-0.5 flex-shrink-0 text-${severityColor}-400`}>
+                              {React.createElement(severityIcon, { className: "h-4 w-4" })}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-200">{indicator.message}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {indicator.type === 'domain' ? 'Domain Analysis' :
+                                 indicator.type === 'url' ? 'URL Structure' :
+                                 indicator.type === 'security' ? 'Security Issue' : 'Content Pattern'}
+                              </p>
+                            </div>
+                          </motion.li>
+                        );
+                      })}
                     </ul>
                   )}
                 </div>
@@ -496,7 +497,7 @@ const LinkScanner: React.FC = () => {
                       <ChevronDown className="h-5 w-5 text-gray-400" />
                     )}
                   </h3>
-                  {(expandedSection === 'recommendations' || expandedSection === null) && (
+                  {expandedSection === 'recommendations' && (
                     <ul className="space-y-3">
                       {scanResult.recommendations.map((rec, index) => (
                         <motion.li 
@@ -632,41 +633,44 @@ const LinkScanner: React.FC = () => {
           >
             <h3 className="text-lg font-semibold text-white mb-4">Recent Scans</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {scanHistory.map((scan, index) => (
-                <motion.div 
-                  key={index} 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className={`rounded-lg border ${getRiskBg(scan.riskLevel)} p-4 cursor-pointer hover:shadow-md transition-shadow backdrop-blur-sm`}
-                  onClick={() => {
-                    setUrl(scan.url);
-                    setScanResult(scan);
-                  }}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="truncate">
-                      <p className="text-sm font-medium text-white truncate">{scan.technicalDetails.domain}</p>
-                      <p className="text-xs text-gray-400 truncate">{scan.url}</p>
+              {scanHistory.map((scan, index) => {
+                const riskStyle = getRiskStyle(scan.riskLevel);
+                return (
+                  <motion.div 
+                    key={index} 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className={`rounded-lg border ${riskStyle.bgClass} p-4 cursor-pointer hover:shadow-md transition-shadow backdrop-blur-sm`}
+                    onClick={() => {
+                      setUrl(scan.url);
+                      setScanResult(scan);
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="truncate">
+                        <p className="text-sm font-medium text-white truncate">{scan.technicalDetails.domain}</p>
+                        <p className="text-xs text-gray-400 truncate">{scan.url}</p>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${riskStyle.colorClass} ${riskStyle.bgClass}`}>
+                        {scan.riskLevel}
+                      </span>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRiskColor(scan.riskLevel)} ${getRiskBg(scan.riskLevel)}`}>
-                      {scan.riskLevel}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-xs text-gray-400">Score: {scan.score}/100</span>
-                    <a 
-                      href={scan.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </div>
-                </motion.div>
-              ))}
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-xs text-gray-400">Score: {scan.score}/100</span>
+                      <a 
+                        href={scan.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           </motion.div>
         )}
