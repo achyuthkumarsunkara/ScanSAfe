@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Shield, Scan, AlertTriangle, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -6,12 +6,39 @@ interface HeroProps {
   setActiveSection: (section: string) => void;
 }
 
+const AdSenseAd: React.FC<{ slot: string; format?: string; className?: string }> = ({
+  slot,
+  format = 'auto',
+  className = ''
+}) => {
+  useEffect(() => {
+    try {
+      ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+    } catch (err) {
+      console.error('AdSense error', err);
+    }
+  }, []);
+
+  return (
+    <div className={`ad-container ${className}`}>
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block' }}
+        data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+        data-ad-slot={slot}
+        data-ad-format={format}
+        data-full-width-responsive="true"
+      />
+    </div>
+  );
+};
+
 const Hero: React.FC<HeroProps> = ({ setActiveSection }) => {
   const stats = [
     { label: 'Phishing Attempts Blocked', value: '1.2M+', icon: Shield },
     { label: 'Accuracy Rate', value: '99.8%', icon: CheckCircle },
     { label: 'Scans Performed', value: '50K+', icon: Scan },
-    { label: 'Threats Detected', value: '15K+', icon: AlertTriangle },
+    { label: 'Threats Detected', value: '15K+', icon: AlertTriangle }
   ];
 
   const fadeInUp = {
@@ -36,7 +63,12 @@ const Hero: React.FC<HeroProps> = ({ setActiveSection }) => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <motion.div 
+        {/* Top leaderboard ad */}
+        <div className="mb-8">
+          <AdSenseAd slot="1234567890" format="leaderboard" className="mx-auto" />
+        </div>
+
+        <motion.div
           initial="hidden"
           animate="visible"
           variants={staggerContainer}
@@ -53,12 +85,17 @@ const Hero: React.FC<HeroProps> = ({ setActiveSection }) => {
 
           <motion.div variants={fadeInUp}>
             <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Our AI-powered tool analyzes emails and links in real-time to detect phishing attempts, 
+              Our AI-powered tool analyzes emails and links in real-time to detect phishing attempts,
               protecting you from cyber threats with industry-leading accuracy.
             </p>
           </motion.div>
-          
-          <motion.div 
+
+          {/* Middle rectangle ad */}
+          <div className="my-8">
+            <AdSenseAd slot="1234567891" format="rectangle" className="mx-auto" />
+          </div>
+
+          <motion.div
             variants={fadeInUp}
             className="flex flex-col sm:flex-row gap-4 justify-center mb-16"
           >
@@ -67,8 +104,18 @@ const Hero: React.FC<HeroProps> = ({ setActiveSection }) => {
               className="relative px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 transform group"
             >
               <span className="relative z-10 flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
                 </svg>
                 Scan Email
               </span>
@@ -79,22 +126,32 @@ const Hero: React.FC<HeroProps> = ({ setActiveSection }) => {
               className="relative px-8 py-4 bg-gray-800 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 transform group border border-gray-700 hover:border-gray-600"
             >
               <span className="relative z-10 flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                  />
                 </svg>
                 Check Link
               </span>
               <span className="absolute inset-0 bg-gray-700 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
             </button>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             variants={staggerContainer}
             className="grid grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto"
           >
             {stats.map((stat, index) => (
-              <motion.div 
-                key={index} 
+              <motion.div
+                key={index}
                 variants={fadeInUp}
                 whileHover={{ y: -5 }}
                 className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 text-center border border-gray-700/50 hover:border-gray-600"
@@ -107,6 +164,11 @@ const Hero: React.FC<HeroProps> = ({ setActiveSection }) => {
               </motion.div>
             ))}
           </motion.div>
+
+          {/* Bottom ad */}
+          <div className="mt-12">
+            <AdSenseAd slot="1234567892" format="horizontal" className="mx-auto" />
+          </div>
         </motion.div>
       </div>
     </section>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Scan, AlertTriangle, CheckCircle, XCircle, Info, ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Head from 'next/head';
 
 interface ScanResult {
   riskLevel: 'safe' | 'suspicious' | 'dangerous';
@@ -13,11 +14,39 @@ interface ScanResult {
   };
 }
 
+const AdSenseAd: React.FC<{ slot: string; format?: string; className?: string }> = ({ 
+  slot, 
+  format = "auto",
+  className = ""
+}) => {
+  useEffect(() => {
+    try {
+      ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+    } catch (err) {
+      console.error("AdSense error", err);
+    }
+  }, []);
+
+  return (
+    <div className={`ad-container ${className}`}>
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block' }}
+        data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+        data-ad-slot={slot}
+        data-ad-format={format}
+        data-full-width-responsive="true"
+      />
+    </div>
+  );
+};
+
 const EmailScanner: React.FC = () => {
   const [emailContent, setEmailContent] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [displayScore, setDisplayScore] = useState(0);
+  const [scanHistory, setScanHistory] = useState<ScanResult[]>([]);
 
   // Animation variants
   const fadeInUp = {
@@ -206,6 +235,7 @@ const EmailScanner: React.FC = () => {
     
     const result = analyzeEmail(emailContent);
     setScanResult(result);
+    setScanHistory(prev => [result, ...prev.slice(0, 4)]);
     setIsScanning(false);
   };
 
@@ -264,222 +294,290 @@ const EmailScanner: React.FC = () => {
   };
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800 py-20">
-      {/* Decorative elements */}
-      <div className="absolute top-0 left-0 w-full h-full opacity-20">
-        <div className="absolute top-20 left-10 w-32 h-32 rounded-full bg-blue-500 blur-3xl"></div>
-        <div className="absolute bottom-10 right-10 w-40 h-40 rounded-full bg-indigo-500 blur-3xl"></div>
-      </div>
+    <>
+      <Head>
+        <script 
+          async 
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+          crossOrigin="anonymous"
+        />
+      </Head>
+      
+      <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800 py-20">
+        {/* Decorative elements */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-20">
+          <div className="absolute top-20 left-10 w-32 h-32 rounded-full bg-blue-500 blur-3xl"></div>
+          <div className="absolute bottom-10 right-10 w-40 h-40 rounded-full bg-indigo-500 blur-3xl"></div>
+        </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <motion.div 
-          initial="hidden"
-          animate="visible"
-          variants={staggerContainer}
-          className="text-center mb-12"
-        >
-          <motion.div variants={fadeInUp}>
-            <Mail className="h-16 w-16 text-blue-400 mx-auto mb-4" />
-          </motion.div>
-          <motion.div variants={fadeInUp}>
-            <h2 className="text-3xl font-bold text-white mb-4">Phishing Email Analyzer</h2>
-          </motion.div>
-          <motion.div variants={fadeInUp}>
-            <p className="text-lg text-gray-300">
-              Detect phishing attempts by analyzing email headers and content for suspicious patterns
-            </p>
-          </motion.div>
-        </motion.div>
-
-        <motion.div 
-          variants={fadeInUp}
-          className="bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8 border border-gray-700/50"
-        >
-          <div className="mb-6">
-            <label htmlFor="email-content" className="block text-sm font-medium text-gray-300 mb-2">
-              Paste Email Content (Headers + Body)
-            </label>
-            <textarea
-              id="email-content"
-              value={emailContent}
-              onChange={(e) => setEmailContent(e.target.value)}
-              rows={12}
-              className="w-full px-3 py-2 bg-gray-700/50 text-gray-200 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none placeholder-gray-400 font-mono text-sm"
-              placeholder={`Example:\nFrom: "Amazon Support" <support@amaz0n-security.com>\nSubject: Urgent: Your account has been locked\n\nDear Customer,\nYour account has been suspended due to suspicious activity. Click here to verify your identity: http://amzn-verify.com/account...`}
-            />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {/* Top Leaderboard Ad */}
+          <div className="mb-8">
+            <AdSenseAd slot="3456789012" format="leaderboard" className="mx-auto" />
           </div>
-          
-          <motion.button
-            onClick={handleScan}
-            disabled={!emailContent.trim() || isScanning}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="relative w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-medium rounded-lg shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
+
+          <motion.div 
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+            className="text-center mb-12"
           >
-            <span className="relative z-10 flex items-center gap-2">
-              {isScanning ? (
-                <>
-                  <Scan className="h-5 w-5 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <ShieldAlert className="h-5 w-5" />
-                  Scan for Phishing
-                </>
-              )}
-            </span>
-            <span className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-          </motion.button>
-        </motion.div>
-
-        <AnimatePresence>
-          {isScanning && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-lg p-8 text-center border border-gray-700/50"
-            >
-              <div className="flex justify-center mb-4">
-                <div className="relative">
-                  <div className="w-16 h-16 border-4 border-blue-400/20 rounded-full"></div>
-                  <div className="absolute top-0 left-0 w-16 h-16 border-4 border-blue-400 rounded-full animate-ping opacity-75"></div>
-                  <Scan className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-6 w-6 text-blue-400 animate-pulse" />
-                </div>
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Analyzing Email</h3>
-              <p className="text-gray-400">Checking for phishing indicators, suspicious links, and sender verification...</p>
+            <motion.div variants={fadeInUp}>
+              <Mail className="h-16 w-16 text-blue-400 mx-auto mb-4" />
             </motion.div>
+            <motion.div variants={fadeInUp}>
+              <h2 className="text-3xl font-bold text-white mb-4">Phishing Email Analyzer</h2>
+            </motion.div>
+            <motion.div variants={fadeInUp}>
+              <p className="text-lg text-gray-300">
+                Detect phishing attempts by analyzing email headers and content for suspicious patterns
+              </p>
+            </motion.div>
+          </motion.div>
+
+          {/* Middle Rectangle Ad (only shown when not scanning and no results) */}
+          {!isScanning && !scanResult && (
+            <div className="my-8">
+              <AdSenseAd slot="3456789013" format="rectangle" className="mx-auto" />
+            </div>
           )}
-        </AnimatePresence>
 
-        <AnimatePresence>
-          {scanResult && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5 }}
-              className={`rounded-xl shadow-lg p-6 border-2 ${getRiskBg(scanResult.riskLevel)} backdrop-blur-sm`}
+          <motion.div 
+            variants={fadeInUp}
+            className="bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8 border border-gray-700/50"
+          >
+            <div className="mb-6">
+              <label htmlFor="email-content" className="block text-sm font-medium text-gray-300 mb-2">
+                Paste Email Content (Headers + Body)
+              </label>
+              <textarea
+                id="email-content"
+                value={emailContent}
+                onChange={(e) => setEmailContent(e.target.value)}
+                rows={12}
+                className="w-full px-3 py-2 bg-gray-700/50 text-gray-200 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none placeholder-gray-400 font-mono text-sm"
+                placeholder={`Example:\nFrom: "Amazon Support" <support@amaz0n-security.com>\nSubject: Urgent: Your account has been locked\n\nDear Customer,\nYour account has been suspended due to suspicious activity. Click here to verify your identity: http://amzn-verify.com/account...`}
+              />
+            </div>
+            
+            <motion.button
+              onClick={handleScan}
+              disabled={!emailContent.trim() || isScanning}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="relative w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-medium rounded-lg shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
             >
-              <div className="flex items-center gap-3 mb-6">
-                {React.createElement(getRiskIcon(scanResult.riskLevel), {
-                  className: `h-8 w-8 ${getRiskColor(scanResult.riskLevel)}`
-                })}
-                <div>
-                  <h3 className="text-xl font-bold text-white">
-                    Risk Assessment:{" "}
-                    <span className={getRiskColor(scanResult.riskLevel)}>
-                      {scanResult.riskLevel.charAt(0).toUpperCase() + scanResult.riskLevel.slice(1)}
-                    </span>
-                  </h3>
-                  <div className="w-full bg-gray-700 rounded-full h-2.5 mt-2 overflow-hidden">
-                    <motion.div
-                      className={`h-2.5 rounded-full ${getRiskBgColor(scanResult.riskLevel)}`}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${scanResult.score}%` }}
-                      transition={{ duration: 1, ease: "easeOut" }}
-                    />
-                  </div>
-                  <p className="text-gray-300 mt-2">
-                    Detection Score: {displayScore}/100
-                  </p>
-                </div>
-              </div>
+              <span className="relative z-10 flex items-center gap-2">
+                {isScanning ? (
+                  <>
+                    <Scan className="h-5 w-5 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <ShieldAlert className="h-5 w-5" />
+                    Scan for Phishing
+                  </>
+                )}
+              </span>
+              <span className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+            </motion.button>
+          </motion.div>
 
-              {scanResult.senderAnalysis?.displayNameVsEmail && (
-                <div className="mb-6 p-3 bg-amber-900/20 border border-amber-400/20 rounded-lg">
-                  <div className="flex items-center gap-2 text-amber-400">
-                    <AlertTriangle className="h-4 w-4" />
-                    <h4 className="font-medium text-sm">{scanResult.senderAnalysis.displayNameVsEmail}</h4>
+          <AnimatePresence>
+            {isScanning && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-lg p-8 text-center border border-gray-700/50"
+              >
+                <div className="flex justify-center mb-4">
+                  <div className="relative">
+                    <div className="w-16 h-16 border-4 border-blue-400/20 rounded-full"></div>
+                    <div className="absolute top-0 left-0 w-16 h-16 border-4 border-blue-400 rounded-full animate-ping opacity-75"></div>
+                    <Scan className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-6 w-6 text-blue-400 animate-pulse" />
                   </div>
                 </div>
-              )}
+                <h3 className="text-lg font-semibold text-white mb-2">Analyzing Email</h3>
+                <p className="text-gray-400">Checking for phishing indicators, suspicious links, and sender verification...</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <ShieldAlert className="h-4 w-4" />
-                    Suspicious Indicators
-                  </h4>
-                  {scanResult.indicators.length > 0 ? (
+          <AnimatePresence>
+            {scanResult && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.5 }}
+                className={`rounded-xl shadow-lg p-6 border-2 ${getRiskBg(scanResult.riskLevel)} backdrop-blur-sm`}
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  {React.createElement(getRiskIcon(scanResult.riskLevel), {
+                    className: `h-8 w-8 ${getRiskColor(scanResult.riskLevel)}`
+                  })}
+                  <div>
+                    <h3 className="text-xl font-bold text-white">
+                      Risk Assessment:{" "}
+                      <span className={getRiskColor(scanResult.riskLevel)}>
+                        {scanResult.riskLevel.charAt(0).toUpperCase() + scanResult.riskLevel.slice(1)}
+                      </span>
+                    </h3>
+                    <div className="w-full bg-gray-700 rounded-full h-2.5 mt-2 overflow-hidden">
+                      <motion.div
+                        className={`h-2.5 rounded-full ${getRiskBgColor(scanResult.riskLevel)}`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${scanResult.score}%` }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                      />
+                    </div>
+                    <p className="text-gray-300 mt-2">
+                      Detection Score: {displayScore}/100
+                    </p>
+                  </div>
+                </div>
+
+                {scanResult.senderAnalysis?.displayNameVsEmail && (
+                  <div className="mb-6 p-3 bg-amber-900/20 border border-amber-400/20 rounded-lg">
+                    <div className="flex items-center gap-2 text-amber-400">
+                      <AlertTriangle className="h-4 w-4" />
+                      <h4 className="font-medium text-sm">{scanResult.senderAnalysis.displayNameVsEmail}</h4>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
+                      <ShieldAlert className="h-4 w-4" />
+                      Suspicious Indicators
+                    </h4>
+                    {scanResult.indicators.length > 0 ? (
+                      <ul className="space-y-3">
+                        {scanResult.indicators.map((indicator, index) => (
+                          <motion.li 
+                            key={index} 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="flex items-start gap-2"
+                          >
+                            {React.createElement(getSeverityIcon(indicator.severity), {
+                              className: `h-4 w-4 mt-0.5 flex-shrink-0 ${getSeverityColor(indicator.severity)}`
+                            })}
+                            <span className={`text-sm ${indicator.severity === 'high' ? 'text-red-300' : 'text-gray-300'}`}>
+                              {indicator.text}
+                            </span>
+                          </motion.li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="flex items-center gap-2 text-green-400">
+                        <CheckCircle className="h-4 w-4" />
+                        <p className="text-sm">No suspicious indicators detected</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4" />
+                      Recommended Actions
+                    </h4>
                     <ul className="space-y-3">
-                      {scanResult.indicators.map((indicator, index) => (
+                      {scanResult.recommendations.map((rec, index) => (
                         <motion.li 
-                          key={index} 
+                          key={index}
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: index * 0.1 }}
                           className="flex items-start gap-2"
                         >
-                          {React.createElement(getSeverityIcon(indicator.severity), {
-                            className: `h-4 w-4 mt-0.5 flex-shrink-0 ${getSeverityColor(indicator.severity)}`
-                          })}
-                          <span className={`text-sm ${indicator.severity === 'high' ? 'text-red-300' : 'text-gray-300'}`}>
-                            {indicator.text}
-                          </span>
+                          {rec.startsWith('❌') ? (
+                            <XCircle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
+                          ) : rec.startsWith('⚠️') ? (
+                            <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                          ) : (
+                            <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                          )}
+                          <span className="text-sm text-gray-300">{rec.replace(/^[^\s]+\s/, '')}</span>
                         </motion.li>
                       ))}
                     </ul>
-                  ) : (
-                    <div className="flex items-center gap-2 text-green-400">
-                      <CheckCircle className="h-4 w-4" />
-                      <p className="text-sm">No suspicious indicators detected</p>
-                    </div>
-                  )}
+                  </div>
                 </div>
 
-                <div>
-                  <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    Recommended Actions
-                  </h4>
-                  <ul className="space-y-3">
-                    {scanResult.recommendations.map((rec, index) => (
-                      <motion.li 
-                        key={index}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="flex items-start gap-2"
-                      >
-                        {rec.startsWith('❌') ? (
-                          <XCircle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
-                        ) : rec.startsWith('⚠️') ? (
-                          <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 flex-shrink-0" />
-                        ) : (
-                          <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
-                        )}
-                        <span className="text-sm text-gray-300">{rec.replace(/^[^\s]+\s/, '')}</span>
-                      </motion.li>
-                    ))}
-                  </ul>
-                </div>
+                {scanResult.riskLevel === 'dangerous' && (
+                  <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="mt-6 p-4 bg-red-900/30 border border-red-400/30 rounded-lg"
+                  >
+                    <div className="flex items-center gap-2 text-red-400">
+                      <XCircle className="h-5 w-5" />
+                      <h4 className="font-semibold">🚨 High Risk Phishing Alert</h4>
+                    </div>
+                    <p className="text-sm text-red-300 mt-2">
+                      This email exhibits multiple characteristics of sophisticated phishing attempts. 
+                      Interacting with this email could compromise your personal information or infect 
+                      your device with malware.
+                    </p>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Recent Scans History */}
+          {scanHistory.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="mt-12"
+            >
+              {/* Bottom Horizontal Ad */}
+              <div className="mb-8">
+                <AdSenseAd slot="3456789014" format="horizontal" className="mx-auto" />
               </div>
 
-              {scanResult.riskLevel === 'dangerous' && (
-                <motion.div 
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="mt-6 p-4 bg-red-900/30 border border-red-400/30 rounded-lg"
-                >
-                  <div className="flex items-center gap-2 text-red-400">
-                    <XCircle className="h-5 w-5" />
-                    <h4 className="font-semibold">🚨 High Risk Phishing Alert</h4>
-                  </div>
-                  <p className="text-sm text-red-300 mt-2">
-                    This email exhibits multiple characteristics of sophisticated phishing attempts. 
-                    Interacting with this email could compromise your personal information or infect 
-                    your device with malware.
-                  </p>
-                </motion.div>
-              )}
+              <h3 className="text-lg font-semibold text-white mb-4">Recent Scans</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {scanHistory.map((scan, index) => (
+                  <motion.div 
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className={`rounded-lg p-4 border-2 ${getRiskBg(scan.riskLevel)} backdrop-blur-sm cursor-pointer hover:shadow-md transition-shadow`}
+                    onClick={() => {
+                      setEmailContent(`From: "Example Sender" <sender@${scan.indicators.length > 0 ? 'suspicious' : 'trusted'}.com>\n\nSample email content that triggered ${scan.indicators.length} indicators`);
+                      setScanResult(scan);
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-white">
+                          {scan.riskLevel.charAt(0).toUpperCase() + scan.riskLevel.slice(1)} Risk
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {scan.indicators.length} indicator{scan.indicators.length !== 1 ? 's' : ''} detected
+                        </p>
+                      </div>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getRiskColor(scan.riskLevel)}`}>
+                        Score: {scan.score}/100
+                      </span>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </motion.div>
           )}
-        </AnimatePresence>
-      </div>
-    </section>
+        </div>
+      </section>
+    </>
   );
 };
 
