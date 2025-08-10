@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Link, Scan, AlertTriangle, CheckCircle, XCircle, Globe, ChevronDown, ChevronUp, Shield, Lock, ExternalLink } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface LinkScanResult {
   url: string;
@@ -19,7 +19,7 @@ interface LinkScanResult {
     isHttps: boolean;
     hasRedirects: boolean;
     finalUrl: string;
-    reputation: string;
+    reputation: 'Good' | 'Unknown' | 'Poor';
     blacklistStatus: string[];
   };
 }
@@ -29,13 +29,13 @@ const RISK_LEVELS = {
   suspicious: { color: 'amber', icon: AlertTriangle },
   dangerous: { color: 'red', icon: XCircle },
   default: { color: 'gray', icon: Globe }
-};
+} as const;
 
 const SEVERITY_WEIGHTS = {
   high: 30,
   medium: 20,
   low: 10
-};
+} as const;
 
 const SUSPICIOUS_TLDS = ['.tk', '.ml', '.ga', '.cf', '.gq', '.xyz'];
 const SUSPICIOUS_KEYWORDS = [
@@ -43,7 +43,7 @@ const SUSPICIOUS_KEYWORDS = [
   { pattern: /bank|paypal|amazon|ebay/i, severity: 'high' as const },
   { pattern: /update|verify|security/i, severity: 'medium' as const },
   { pattern: /account|profile|settings/i, severity: 'low' as const }
-];
+] as const;
 
 const LinkScanner: React.FC = () => {
   const [url, setUrl] = useState('');
@@ -51,6 +51,7 @@ const LinkScanner: React.FC = () => {
   const [scanResult, setScanResult] = useState<LinkScanResult | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [scanHistory, setScanHistory] = useState<LinkScanResult[]>([]);
+  const [displayScore, setDisplayScore] = useState(0);
 
   const fadeInUp = {
     hidden: { opacity: 0, y: 20 },
@@ -65,6 +66,23 @@ const LinkScanner: React.FC = () => {
     }
   };
 
+  // Reset display score when scan result changes
+  useEffect(() => {
+    if (scanResult) {
+      setDisplayScore(0);
+      let start = 0;
+      const interval = setInterval(() => {
+        start += 1;
+        if (start >= scanResult.score) {
+          start = scanResult.score;
+          clearInterval(interval);
+        }
+        setDisplayScore(start);
+      }, 10);
+      return () => clearInterval(interval);
+    }
+  }, [scanResult]);
+
   const analyzeDomain = useCallback((domain: string) => {
     const results = {
       isSuspicious: false,
@@ -77,7 +95,7 @@ const LinkScanner: React.FC = () => {
       creationDate: null as string | null
     };
 
-    const domainTLD = '.' + domain.split('.').pop();
+    const domainTLD = '.' + domain.split('.').pop()!;
     if (SUSPICIOUS_TLDS.includes(domainTLD)) {
       results.indicators.push({
         type: 'domain',
@@ -289,6 +307,7 @@ const LinkScanner: React.FC = () => {
       return {
         colorClass: `text-${risk.color}-400`,
         bgClass: `bg-${risk.color}-900/20 border-${risk.color}-400/20`,
+        progressClass: `bg-${risk.color}-500`,
         icon: risk.icon
       };
     };
@@ -375,254 +394,297 @@ const LinkScanner: React.FC = () => {
           </div>
         </motion.div>
 
-        {isScanning && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-lg p-8 text-center mb-8 border border-gray-700/50"
-          >
-            <div className="flex justify-center mb-4">
-              <div className="relative">
-                <div className="w-20 h-20 border-4 border-blue-400/20 rounded-full"></div>
-                <div className="absolute top-0 left-0 w-20 h-20 border-4 border-blue-400 rounded-full opacity-0 animate-ping"></div>
-                <Globe className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-blue-400" />
-              </div>
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Analyzing URL</h3>
-            <p className="text-gray-400">Checking domain reputation, security features, and content patterns...</p>
-          </motion.div>
-        )}
-
-        {scanResult && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="space-y-6"
-          >
-            <div className={`rounded-xl shadow-lg p-6 border-2 ${getRiskStyle(scanResult.riskLevel).bgClass} backdrop-blur-sm`}>
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-full ${getRiskStyle(scanResult.riskLevel).bgClass}`}>
-                    {React.createElement(getRiskStyle(scanResult.riskLevel).icon, {
-                      className: `h-8 w-8 ${getRiskStyle(scanResult.riskLevel).colorClass}`
-                    })}
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-white">Scan Results</h2>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-400">Risk Level:</span>
-                      <span className={`font-semibold ${getRiskStyle(scanResult.riskLevel).colorClass}`}>
-                        {scanResult.riskLevel.charAt(0).toUpperCase() + scanResult.riskLevel.slice(1)}
-                      </span>
-                      <span className="text-gray-500">•</span>
-                      <span className="text-gray-400">Score: {scanResult.score}/100</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-gray-700/50 px-3 py-1.5 rounded-full text-sm font-medium">
-                  <span className="text-gray-300">Scanned URL:</span>{' '}
-                  <a 
-                    href={scanResult.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:underline break-all"
-                  >
-                    {scanResult.url.length > 50 ? `${scanResult.url.substring(0, 47)}...` : scanResult.url}
-                  </a>
+        <AnimatePresence>
+          {isScanning && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-lg p-8 text-center mb-8 border border-gray-700/50"
+            >
+              <div className="flex justify-center mb-4">
+                <div className="relative">
+                  <div className="w-20 h-20 border-4 border-blue-400/20 rounded-full"></div>
+                  <div className="absolute top-0 left-0 w-20 h-20 border-4 border-blue-400 rounded-full opacity-0 animate-ping"></div>
+                  <Globe className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-blue-400" />
                 </div>
               </div>
+              <h3 className="text-xl font-semibold text-white mb-2">Analyzing URL</h3>
+              <p className="text-gray-400">Checking domain reputation, security features, and content patterns...</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h3 
-                    className="font-semibold text-white mb-3 flex items-center justify-between cursor-pointer"
-                    onClick={() => toggleSection('indicators')}
-                  >
-                    <span className="flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5 text-amber-400" />
-                      Potential Risks ({scanResult.indicators.length})
-                    </span>
-                    {expandedSection === 'indicators' ? (
-                      <ChevronUp className="h-5 w-5 text-gray-400" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5 text-gray-400" />
-                    )}
-                  </h3>
-                  {expandedSection === 'indicators' && (
-                    <ul className="space-y-3">
-                      {scanResult.indicators.map((indicator, index) => {
-                        const severityIcon = indicator.severity === 'high' ? XCircle : 
-                                          indicator.severity === 'medium' ? AlertTriangle : Shield;
-                        const severityColor = indicator.severity === 'high' ? 'red' : 
-                                           indicator.severity === 'medium' ? 'amber' : 'blue';
-                        return (
-                          <motion.li 
-                            key={index} 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: index * 0.05 }}
-                            className="flex items-start gap-3"
-                          >
-                            <div className={`mt-0.5 flex-shrink-0 text-${severityColor}-400`}>
-                              {React.createElement(severityIcon, { className: "h-4 w-4" })}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-200">{indicator.message}</p>
-                              <p className="text-xs text-gray-500 mt-0.5">
-                                {indicator.type === 'domain' ? 'Domain Analysis' :
-                                 indicator.type === 'url' ? 'URL Structure' :
-                                 indicator.type === 'security' ? 'Security Issue' : 'Content Pattern'}
-                              </p>
-                            </div>
-                          </motion.li>
-                        );
+        <AnimatePresence>
+          {scanResult && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
+              className="space-y-6"
+            >
+              <div className={`rounded-xl shadow-lg p-6 border-2 ${getRiskStyle(scanResult.riskLevel).bgClass} backdrop-blur-sm`}>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-full ${getRiskStyle(scanResult.riskLevel).bgClass}`}>
+                      {React.createElement(getRiskStyle(scanResult.riskLevel).icon, {
+                        className: `h-8 w-8 ${getRiskStyle(scanResult.riskLevel).colorClass}`
                       })}
-                    </ul>
-                  )}
-                </div>
-
-                <div>
-                  <h3 
-                    className="font-semibold text-white mb-3 flex items-center justify-between cursor-pointer"
-                    onClick={() => toggleSection('recommendations')}
-                  >
-                    <span className="flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-400" />
-                      Recommended Actions
-                    </span>
-                    {expandedSection === 'recommendations' ? (
-                      <ChevronUp className="h-5 w-5 text-gray-400" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5 text-gray-400" />
-                    )}
-                  </h3>
-                  {expandedSection === 'recommendations' && (
-                    <ul className="space-y-3">
-                      {scanResult.recommendations.map((rec, index) => (
-                        <motion.li 
-                          key={index}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="flex items-start gap-3"
-                        >
-                          <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
-                          <p className="text-sm text-gray-200">{rec}</p>
-                        </motion.li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-lg border border-gray-700/50 overflow-hidden">
-              <div 
-                className="px-6 py-4 border-b border-gray-700/50 flex items-center justify-between cursor-pointer"
-                onClick={() => toggleSection('technical')}
-              >
-                <h3 className="font-semibold text-white flex items-center gap-2">
-                  <svg className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Technical Details
-                </h3>
-                {expandedSection === 'technical' ? (
-                  <ChevronUp className="h-5 w-5 text-gray-400" />
-                ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-400" />
-                )}
-              </div>
-              {expandedSection === 'technical' && (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="p-6"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-400 mb-3">DOMAIN INFORMATION</h4>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-xs text-gray-500">Registered Domain</p>
-                          <p className="text-sm font-medium text-white">{scanResult.technicalDetails.domain}</p>
-                        </div>
-                        {scanResult.technicalDetails.creationDate && (
-                          <div>
-                            <p className="text-xs text-gray-500">Creation Date</p>
-                            <p className="text-sm font-medium text-white">{scanResult.technicalDetails.creationDate}</p>
-                          </div>
-                        )}
-                        <div>
-                          <p className="text-xs text-gray-500">Registrar</p>
-                          <p className="text-sm font-medium text-white">{scanResult.technicalDetails.registrar}</p>
-                        </div>
-                      </div>
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium text-gray-400 mb-3">SECURITY ANALYSIS</h4>
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                          <div className={`p-1.5 rounded-full ${
-                            scanResult.technicalDetails.isHttps ? 'bg-green-900/20 text-green-400' : 'bg-red-900/20 text-red-400'
-                          }`}>
-                            <Lock className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500">Connection</p>
-                            <p className="text-sm font-medium text-white">
-                              {scanResult.technicalDetails.isHttps ? 'Secure (HTTPS)' : 'Insecure (HTTP)'}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className={`p-1.5 rounded-full ${
-                            scanResult.technicalDetails.hasRedirects ? 'bg-amber-900/20 text-amber-400' : 'bg-green-900/20 text-green-400'
-                          }`}>
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500">Redirects</p>
-                            <p className="text-sm font-medium text-white">
-                              {scanResult.technicalDetails.hasRedirects ? 'Detected' : 'None detected'}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className={`p-1.5 rounded-full ${
-                            scanResult.technicalDetails.reputation === 'Good' ? 'bg-green-900/20 text-green-400' :
-                            scanResult.technicalDetails.reputation === 'Unknown' ? 'bg-amber-900/20 text-amber-400' : 'bg-red-900/20 text-red-400'
-                          }`}>
-                            <Shield className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500">Reputation</p>
-                            <p className="text-sm font-medium text-white">{scanResult.technicalDetails.reputation}</p>
-                          </div>
-                        </div>
+                      <h2 className="text-xl font-bold text-white">Scan Results</h2>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-400">Risk Level:</span>
+                        <span className={`font-semibold ${getRiskStyle(scanResult.riskLevel).colorClass}`}>
+                          {scanResult.riskLevel.charAt(0).toUpperCase() + scanResult.riskLevel.slice(1)}
+                        </span>
+                        <span className="text-gray-500">•</span>
+                        <span className="text-gray-400">Score: {displayScore}/100</span>
                       </div>
                     </div>
                   </div>
-                  {scanResult.technicalDetails.blacklistStatus.length > 0 && (
-                    <div className="mt-6">
-                      <h4 className="text-sm font-medium text-gray-400 mb-3">BLACKLIST STATUS</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {scanResult.technicalDetails.blacklistStatus.map((service, index) => (
-                          <span key={index} className="px-2.5 py-1 rounded-full bg-red-900/20 text-red-400 text-xs font-medium">
-                            {service}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+                  <div className="bg-gray-700/50 px-3 py-1.5 rounded-full text-sm font-medium">
+                    <span className="text-gray-300">Scanned URL:</span>{' '}
+                    <a 
+                      href={scanResult.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:underline break-all"
+                    >
+                      {scanResult.url.length > 50 ? `${scanResult.url.substring(0, 47)}...` : scanResult.url}
+                    </a>
+                  </div>
+                </div>
+
+                <div className="w-full bg-gray-700 rounded-full h-2.5 mt-2 overflow-hidden">
+                  <motion.div
+                    className={`h-2.5 rounded-full ${getRiskStyle(scanResult.riskLevel).progressClass}`}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${scanResult.score}%` }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6 mt-6">
+                  <div>
+                    <h3 
+                      className="font-semibold text-white mb-3 flex items-center justify-between cursor-pointer"
+                      onClick={() => toggleSection('indicators')}
+                    >
+                      <span className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-amber-400" />
+                        Potential Risks ({scanResult.indicators.length})
+                      </span>
+                      {expandedSection === 'indicators' ? (
+                        <ChevronUp className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                      )}
+                    </h3>
+                    <AnimatePresence>
+                      {expandedSection === 'indicators' && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <ul className="space-y-3">
+                            {scanResult.indicators.map((indicator, index) => {
+                              const severityIcon = indicator.severity === 'high' ? XCircle : 
+                                                indicator.severity === 'medium' ? AlertTriangle : Shield;
+                              const severityColor = indicator.severity === 'high' ? 'red' : 
+                                                 indicator.severity === 'medium' ? 'amber' : 'blue';
+                              return (
+                                <motion.li 
+                                  key={index} 
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={{ delay: index * 0.05 }}
+                                  className="flex items-start gap-3"
+                                >
+                                  <div className={`mt-0.5 flex-shrink-0 text-${severityColor}-400`}>
+                                    {React.createElement(severityIcon, { className: "h-4 w-4" })}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-200">{indicator.message}</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                      {indicator.type === 'domain' ? 'Domain Analysis' :
+                                       indicator.type === 'url' ? 'URL Structure' :
+                                       indicator.type === 'security' ? 'Security Issue' : 'Content Pattern'}
+                                    </p>
+                                  </div>
+                                </motion.li>
+                              );
+                            })}
+                          </ul>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  <div>
+                    <h3 
+                      className="font-semibold text-white mb-3 flex items-center justify-between cursor-pointer"
+                      onClick={() => toggleSection('recommendations')}
+                    >
+                      <span className="flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5 text-green-400" />
+                        Recommended Actions
+                      </span>
+                      {expandedSection === 'recommendations' ? (
+                        <ChevronUp className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                      )}
+                    </h3>
+                    <AnimatePresence>
+                      {expandedSection === 'recommendations' && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <ul className="space-y-3">
+                            {scanResult.recommendations.map((rec, index) => (
+                              <motion.li 
+                                key={index}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: index * 0.05 }}
+                                className="flex items-start gap-3"
+                              >
+                                <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                                <p className="text-sm text-gray-200">{rec}</p>
+                              </motion.li>
+                            ))}
+                          </ul>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-lg border border-gray-700/50 overflow-hidden">
+                <div 
+                  className="px-6 py-4 border-b border-gray-700/50 flex items-center justify-between cursor-pointer"
+                  onClick={() => toggleSection('technical')}
+                >
+                  <h3 className="font-semibold text-white flex items-center gap-2">
+                    <svg className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Technical Details
+                  </h3>
+                  {expandedSection === 'technical' ? (
+                    <ChevronUp className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-gray-400" />
                   )}
-                </motion.div>
-              )}
-            </div>
-          </motion.div>
-        )}
+                </div>
+                <AnimatePresence>
+                  {expandedSection === 'technical' && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="p-6"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-400 mb-3">DOMAIN INFORMATION</h4>
+                          <div className="space-y-4">
+                            <div>
+                              <p className="text-xs text-gray-500">Registered Domain</p>
+                              <p className="text-sm font-medium text-white">{scanResult.technicalDetails.domain}</p>
+                            </div>
+                            {scanResult.technicalDetails.creationDate && (
+                              <div>
+                                <p className="text-xs text-gray-500">Creation Date</p>
+                                <p className="text-sm font-medium text-white">{scanResult.technicalDetails.creationDate}</p>
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-xs text-gray-500">Registrar</p>
+                              <p className="text-sm font-medium text-white">{scanResult.technicalDetails.registrar}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-400 mb-3">SECURITY ANALYSIS</h4>
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                              <div className={`p-1.5 rounded-full ${
+                                scanResult.technicalDetails.isHttps ? 'bg-green-900/20 text-green-400' : 'bg-red-900/20 text-red-400'
+                              }`}>
+                                <Lock className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Connection</p>
+                                <p className="text-sm font-medium text-white">
+                                  {scanResult.technicalDetails.isHttps ? 'Secure (HTTPS)' : 'Insecure (HTTP)'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className={`p-1.5 rounded-full ${
+                                scanResult.technicalDetails.hasRedirects ? 'bg-amber-900/20 text-amber-400' : 'bg-green-900/20 text-green-400'
+                              }`}>
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                </svg>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Redirects</p>
+                                <p className="text-sm font-medium text-white">
+                                  {scanResult.technicalDetails.hasRedirects ? 'Detected' : 'None detected'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className={`p-1.5 rounded-full ${
+                                scanResult.technicalDetails.reputation === 'Good' ? 'bg-green-900/20 text-green-400' :
+                                scanResult.technicalDetails.reputation === 'Unknown' ? 'bg-amber-900/20 text-amber-400' : 'bg-red-900/20 text-red-400'
+                              }`}>
+                                <Shield className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Reputation</p>
+                                <p className="text-sm font-medium text-white">{scanResult.technicalDetails.reputation}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      {scanResult.technicalDetails.blacklistStatus.length > 0 && (
+                        <div className="mt-6">
+                          <h4 className="text-sm font-medium text-gray-400 mb-3">BLACKLIST STATUS</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {scanResult.technicalDetails.blacklistStatus.map((service, index) => (
+                              <motion.span 
+                                key={index} 
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ delay: index * 0.1 }}
+                                className="px-2.5 py-1 rounded-full bg-red-900/20 text-red-400 text-xs font-medium"
+                              >
+                                {service}
+                              </motion.span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {scanHistory.length > 0 && (
           <motion.div 
