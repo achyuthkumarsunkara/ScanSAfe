@@ -1,37 +1,10 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Shield, Scan, AlertTriangle, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface HeroProps {
   setActiveSection: (section: string) => void;
 }
-
-const AdSenseAd: React.FC<{ slot: string; format?: string; className?: string }> = ({
-  slot,
-  format = 'auto',
-  className = ''
-}) => {
-  useEffect(() => {
-    try {
-      ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
-    } catch (err) {
-      console.error('AdSense error', err);
-    }
-  }, []);
-
-  return (
-    <div className={`ad-container ${className}`}>
-      <ins
-        className="adsbygoogle"
-        style={{ display: 'block' }}
-        data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
-        data-ad-slot={slot}
-        data-ad-format={format}
-        data-full-width-responsive="true"
-      />
-    </div>
-  );
-};
 
 const Hero: React.FC<HeroProps> = ({ setActiveSection }) => {
   const stats = [
@@ -63,11 +36,6 @@ const Hero: React.FC<HeroProps> = ({ setActiveSection }) => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        {/* Top leaderboard ad */}
-        <div className="mb-8">
-          <AdSenseAd slot="1234567890" format="leaderboard" className="mx-auto" />
-        </div>
-
         <motion.div
           initial="hidden"
           animate="visible"
@@ -89,11 +57,6 @@ const Hero: React.FC<HeroProps> = ({ setActiveSection }) => {
               protecting you from cyber threats with industry-leading accuracy.
             </p>
           </motion.div>
-
-          {/* Middle rectangle ad */}
-          <div className="my-8">
-            <AdSenseAd slot="1234567891" format="rectangle" className="mx-auto" />
-          </div>
 
           <motion.div
             variants={fadeInUp}
@@ -164,11 +127,6 @@ const Hero: React.FC<HeroProps> = ({ setActiveSection }) => {
               </motion.div>
             ))}
           </motion.div>
-
-          {/* Bottom ad */}
-          <div className="mt-12">
-            <AdSenseAd slot="1234567892" format="horizontal" className="mx-auto" />
-          </div>
         </motion.div>
       </div>
     </section>

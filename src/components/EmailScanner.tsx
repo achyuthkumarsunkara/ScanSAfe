@@ -14,33 +14,6 @@ interface ScanResult {
   };
 }
 
-const AdSenseAd: React.FC<{ slot: string; format?: string; className?: string }> = ({ 
-  slot, 
-  format = "auto",
-  className = ""
-}) => {
-  useEffect(() => {
-    try {
-      ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
-    } catch (err) {
-      console.error("AdSense error", err);
-    }
-  }, []);
-
-  return (
-    <div className={`ad-container ${className}`}>
-      <ins
-        className="adsbygoogle"
-        style={{ display: 'block' }}
-        data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
-        data-ad-slot={slot}
-        data-ad-format={format}
-        data-full-width-responsive="true"
-      />
-    </div>
-  );
-};
-
 const EmailScanner: React.FC = () => {
   const [emailContent, setEmailContent] = useState('');
   const [isScanning, setIsScanning] = useState(false);
@@ -296,11 +269,7 @@ const EmailScanner: React.FC = () => {
   return (
     <>
       <Head>
-        <script 
-          async 
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
-          crossOrigin="anonymous"
-        />
+        <title>Email Scanner - Phishing Detection</title>
       </Head>
       
       <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800 py-20">
@@ -311,11 +280,6 @@ const EmailScanner: React.FC = () => {
         </div>
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          {/* Top Leaderboard Ad */}
-          <div className="mb-8">
-            <AdSenseAd slot="3456789012" format="leaderboard" className="mx-auto" />
-          </div>
-
           <motion.div 
             initial="hidden"
             animate="visible"
@@ -334,13 +298,6 @@ const EmailScanner: React.FC = () => {
               </p>
             </motion.div>
           </motion.div>
-
-          {/* Middle Rectangle Ad (only shown when not scanning and no results) */}
-          {!isScanning && !scanResult && (
-            <div className="my-8">
-              <AdSenseAd slot="3456789013" format="rectangle" className="mx-auto" />
-            </div>
-          )}
 
           <motion.div 
             variants={fadeInUp}
@@ -538,11 +495,6 @@ const EmailScanner: React.FC = () => {
               transition={{ delay: 0.3 }}
               className="mt-12"
             >
-              {/* Bottom Horizontal Ad */}
-              <div className="mb-8">
-                <AdSenseAd slot="3456789014" format="horizontal" className="mx-auto" />
-              </div>
-
               <h3 className="text-lg font-semibold text-white mb-4">Recent Scans</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {scanHistory.map((scan, index) => (

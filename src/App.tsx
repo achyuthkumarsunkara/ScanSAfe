@@ -5,6 +5,7 @@ import EmailScanner from './components/EmailScanner';
 import LinkScanner from './components/LinkScanner';
 import EducationalContent from './components/EducationalContent';
 import Footer from './components/Footer';
+import AboutUs from './components/AboutUs';
 
 function App() {
   const [activeSection, setActiveSection] = useState('home');
@@ -17,6 +18,8 @@ function App() {
         return <LinkScanner />;
       case 'learn':
         return <EducationalContent />;
+      case 'AboutUs':
+        return <AboutUs />;
       default:
         return <Hero setActiveSection={setActiveSection} />;
     }

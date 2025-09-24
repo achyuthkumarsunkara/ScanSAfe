@@ -15,6 +15,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, setActiveSection }) => {
     { name: 'Email Scanner', id: 'email', icon: <Shield className="w-4 h-4" /> },
     { name: 'Link Scanner', id: 'link', icon: <Scan className="w-4 h-4" /> },
     { name: 'Learn', id: 'learn', icon: null },
+    { name: 'AboutUs', id: 'AboutUs', icon: null },
   ];
 
   return (
