@@ -1,6 +1,6 @@
 # ScanSafe - Phishing Detection Platform
 
-![ScanSafe](https://img.shields.io/badge/ScanSafe-Phishing%20Detection-blue)
+![ScanSafe](https://github.com/achyuthkumarsunkara/ScanSAfe/blob/main/public/favicon.png)
 
 A comprehensive web application for detecting and educating about phishing threats. ScanSafe provides real-time analysis of emails and URLs to identify potential phishing attempts and security risks.
 
