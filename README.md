@@ -39,7 +39,7 @@ A comprehensive web application for detecting and educating about phishing threa
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/scansafe.git
+   git clone https://github.com/achyuthkumarsunkara/scansafe.git
    cd scansafe
    ```
 
